@@ -25,9 +25,9 @@ public class UsersController : BaseController
     }
 
     [HttpPost("refreshToken")]
-    public async Task<IActionResult> RefreshToken([FromBody] string refreshToken)
+    public async Task<IActionResult> RefreshToken(RefreshTokenModel refreshTokenModel)
     {
-        return Ok(await _userService.RefreshToken(refreshToken));
+        return Ok(await _userService.RefreshToken(refreshTokenModel.RefreshToken));
     }
 
     [AllowAnonymous]
@@ -37,9 +37,10 @@ public class UsersController : BaseController
         return Ok(await _userService.Register(registerModel));
     }
 
+    [Authorize]
     [HttpGet("me")]
-    public IActionResult GetMe()
+    public async Task<IActionResult> GetMe()
     {
-        return Ok(_userService.GetMe(UserId));
+        return Ok(await _userService.GetMe(UserId));
     }
 }

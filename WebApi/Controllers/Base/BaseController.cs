@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using Dal;
+﻿using Dal;
 using Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -16,7 +15,7 @@ public abstract class BaseController(AppDbContext context) : ControllerBase, IAs
     public async Task OnActionExecutionAsync(ActionExecutingContext context1, ActionExecutionDelegate next)
     {
         var principal = context1.HttpContext?.User;
-        var idValue = principal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var idValue = principal?.FindFirst(UserClaimTypes.UserId)?.Value;
 
         if (!string.IsNullOrEmpty(idValue))
         {

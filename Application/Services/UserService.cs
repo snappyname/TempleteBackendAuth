@@ -1,5 +1,4 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Application.Abstract;
@@ -11,6 +10,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using TemplateWebApi;
 
 namespace Application.Services;
 
@@ -65,6 +66,10 @@ public class UserService : IUserService
 
     public async Task<TokensModel> Register(RegisterModel model)
     {
+        if (await _dbContext.Users.AnyAsync(x => x.Email == model.Email))
+        {
+            throw new UserWithThisEmailExist();
+        }
         var newUser = new User { UserName = model.Email, Email = model.Email };
         await _userManager.CreateAsync(newUser, model.Password);
         return await Login(newUser.Email, model.Password);
@@ -72,18 +77,18 @@ public class UserService : IUserService
 
     public async Task<User> GetMe(string userId)
     {
-        return await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId);
+        return (await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId))!;
     }
 
     private string CreateJwtToken(User user)
     {
         var claims = new[]
         {
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), new Claim(ClaimTypes.Name, user.UserName)
+            new Claim(UserClaimTypes.UserId, user.Id), new Claim(UserClaimTypes.UserEmail, user.UserName)
         };
 
         var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
 
         var token = new JwtSecurityToken(
             claims: claims,

@@ -66,6 +66,9 @@ Output [User]
 
 ### TODO 
 
-* Add refresh token model
-
+* ~~Add refresh token model~~
+* Add refresh token validation after expires 
+* Const for config (jwt key / cors)
+* move cors to new middleware file
+* Make string exceptions to validate on frontend
 ---
