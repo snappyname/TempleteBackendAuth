@@ -71,4 +71,6 @@ Output [User]
 * Const for config (jwt key / cors)
 * move cors to new middleware file
 * Make string exceptions to validate on frontend
+* Add new login providers (Yandex/Github/Telegram)
+* Move UserService to EmailAuthService or smth simular
 ---
