@@ -12,10 +12,13 @@ namespace TemplateWebApi.Controllers;
 public class UsersController : BaseController
 {
     private readonly IUserService _userService;
+    private readonly IGoogleAuthService _googleAuthService;
 
-    public UsersController(AppDbContext context, IUserService userService) : base(context)
+    public UsersController(AppDbContext context, IUserService userService, IGoogleAuthService googleAuthService) :
+        base(context)
     {
         _userService = userService;
+        _googleAuthService = googleAuthService;
     }
 
     [HttpPost("login")]
@@ -42,5 +45,11 @@ public class UsersController : BaseController
     public async Task<IActionResult> GetMe()
     {
         return Ok(await _userService.GetMe(UserId));
+    }
+
+    [HttpPost("auth/google")]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequest request)
+    {
+        return Ok(await _googleAuthService.LoginByGoogle(request));
     }
 }

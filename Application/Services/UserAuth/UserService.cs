@@ -1,7 +1,4 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Security.Cryptography;
-using System.Text;
-using Application.Abstract;
+﻿using Application.Abstract;
 using Application.Exceptions;
 using Dal;
 using Domain;
@@ -9,11 +6,8 @@ using DTO;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.IdentityModel.Tokens;
-using System.Security.Claims;
-using TemplateWebApi;
 
-namespace Application.Services;
+namespace Application.Services.UserAuth;
 
 public class UserService : IUserService
 {
@@ -37,9 +31,8 @@ public class UserService : IUserService
             throw new LoginOrPasswordInvalidException();
         }
 
-        var jwtToken = CreateJwtToken(user);
-        var refreshToken = CreateRefreshToken(user.Id);
-
+        var jwtToken = TokenGenerator.CreateJwtToken(user, _configuration[ConfigurationKeys.JwtKey]!);
+        var refreshToken = await TokenGenerator.GenerateRefreshToken(user.Id, _dbContext);
         await _dbContext.RefreshTokens.AddAsync(refreshToken);
         await _dbContext.SaveChangesAsync();
 
@@ -51,14 +44,15 @@ public class UserService : IUserService
         var refreshToken = await _dbContext.RefreshTokens
             .Include(x => x.User)
             .FirstOrDefaultAsync(x => x.Token == token);
+
         if (refreshToken == null || refreshToken.IsRevoked)
         {
             throw new RefreshTokenInvalid();
         }
 
         refreshToken.IsRevoked = true;
-        var newJwtToken = CreateJwtToken(refreshToken.User);
-        var newRefreshToken = CreateRefreshToken(refreshToken.UserId);
+        var newJwtToken = TokenGenerator.CreateJwtToken(refreshToken.User, _configuration[ConfigurationKeys.JwtKey]!);
+        var newRefreshToken = await TokenGenerator.GenerateRefreshToken(refreshToken.UserId, _dbContext);
         await _dbContext.RefreshTokens.AddAsync(newRefreshToken);
         await _dbContext.SaveChangesAsync();
         return new TokensModel { JWTToken = newJwtToken, RefreshToken = newRefreshToken.Token };
@@ -70,6 +64,7 @@ public class UserService : IUserService
         {
             throw new UserWithThisEmailExist();
         }
+
         var newUser = new User { UserName = model.Email, Email = model.Email };
         await _userManager.CreateAsync(newUser, model.Password);
         return await Login(newUser.Email, model.Password);
@@ -78,33 +73,5 @@ public class UserService : IUserService
     public async Task<User> GetMe(string userId)
     {
         return (await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId))!;
-    }
-
-    private string CreateJwtToken(User user)
-    {
-        var claims = new[]
-        {
-            new Claim(UserClaimTypes.UserId, user.Id), new Claim(UserClaimTypes.UserEmail, user.UserName)
-        };
-
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
-
-        var token = new JwtSecurityToken(
-            claims: claims,
-            expires: DateTime.UtcNow.AddSeconds(60),
-            signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256));
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    private static RefreshToken CreateRefreshToken(string userId)
-    {
-        return new RefreshToken
-        {
-            Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
-            Expires = DateTime.UtcNow.AddDays(30),
-            UserId = userId
-        };
     }
 }
