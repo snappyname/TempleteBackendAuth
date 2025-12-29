@@ -4,6 +4,6 @@ namespace Application.Abstract
 {
     public interface IGoogleAuthService
     {
-        Task<TokensModel> LoginByGoogle(GoogleLoginRequest request);
+        Task<TokensModel> LoginByGoogle(OAuthTokenModel request);
     }
 }

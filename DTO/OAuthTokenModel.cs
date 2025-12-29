@@ -1,6 +1,6 @@
 ﻿namespace DTO
 {
-    public class GoogleLoginRequest
+    public class OAuthTokenModel
     {
         public string IdToken { get; set; }
     }

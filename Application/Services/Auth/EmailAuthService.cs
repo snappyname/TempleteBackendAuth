@@ -1,5 +1,6 @@
 ﻿using Application.Abstract;
 using Application.Exceptions;
+using Application.Services.UserAuth;
 using Dal;
 using Domain;
 using DTO;
@@ -7,15 +8,15 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
-namespace Application.Services.UserAuth;
+namespace Application.Services.Auth;
 
-public class UserService : IUserService
+public class EmailAuthService : IEmailAuthService
 {
     private readonly UserManager<User> _userManager;
     private readonly IConfiguration _configuration;
     private readonly AppDbContext _dbContext;
 
-    public UserService(UserManager<User> userManager, IConfiguration configuration, AppDbContext context)
+    public EmailAuthService(UserManager<User> userManager, IConfiguration configuration, AppDbContext context)
     {
         _userManager = userManager;
         _configuration = configuration;
@@ -68,10 +69,5 @@ public class UserService : IUserService
         var newUser = new User { UserName = model.Email, Email = model.Email };
         await _userManager.CreateAsync(newUser, model.Password);
         return await Login(newUser.Email, model.Password);
-    }
-
-    public async Task<User> GetMe(string userId)
-    {
-        return (await _dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId))!;
     }
 }

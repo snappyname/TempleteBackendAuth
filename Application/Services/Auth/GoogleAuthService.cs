@@ -1,4 +1,5 @@
 ﻿using Application.Abstract;
+using Application.Services.UserAuth;
 using Dal;
 using Domain;
 using DTO;
@@ -9,7 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net.Http.Json;
 
-namespace Application.Services.UserAuth
+namespace Application.Services.Auth
 {
     public class GoogleAuthService : IGoogleAuthService
     {
@@ -18,8 +19,7 @@ namespace Application.Services.UserAuth
         private readonly AppDbContext _dbContext;
         private readonly HttpClient _httpClient;
 
-        public GoogleAuthService(UserManager<User> userManager, IConfiguration configuration, AppDbContext context,
-            HttpClient httpClient)
+        public GoogleAuthService(UserManager<User> userManager, IConfiguration configuration, AppDbContext context, HttpClient httpClient)
         {
             _userManager = userManager;
             _configuration = configuration;
@@ -27,9 +27,9 @@ namespace Application.Services.UserAuth
             _httpClient = httpClient;
         }
 
-        public async Task<TokensModel> LoginByGoogle(GoogleLoginRequest request)
+        public async Task<TokensModel> LoginByGoogle(OAuthTokenModel request)
         {
-            GoogleTokenResponse bearerToken = await ExchangeCodeAsync(request.IdToken);
+            GoogleTokenResponseModel bearerToken = await ExchangeCodeAsync(request.IdToken);
 
             string userSubject = string.Empty;
             string userEmail = string.Empty;
@@ -62,8 +62,7 @@ namespace Application.Services.UserAuth
 
         private async Task<User> FindOrCreateGoogleUser(string googleId, string email)
         {
-            User? login = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(x =>
-                x.Provider == AuthProvider.Google && x.GoogleId == googleId);
+            User? login = await _dbContext.Users.AsNoTracking().FirstOrDefaultAsync(x => x.GoogleId == googleId);
             if (login != null)
             {
                 return login;
@@ -73,7 +72,6 @@ namespace Application.Services.UserAuth
             if (user != null)
             {
                 user.GoogleId = googleId;
-                user.Provider = AuthProvider.Google;
                 await _dbContext.SaveChangesAsync();
                 return user;
             }
@@ -82,7 +80,6 @@ namespace Application.Services.UserAuth
             {
                 UserName = email,
                 Email = email,
-                Provider = AuthProvider.Google,
                 GoogleId = googleId,
                 EmailConfirmed = true
             };
@@ -90,7 +87,7 @@ namespace Application.Services.UserAuth
             return newUser;
         }
 
-        private async Task<GoogleTokenResponse> ExchangeCodeAsync(string code)
+        private async Task<GoogleTokenResponseModel> ExchangeCodeAsync(string code)
         {
             HttpResponseMessage response = await _httpClient.PostAsync(
                 _configuration[ConfigurationKeys.GoogleRequestUrl],
@@ -103,7 +100,7 @@ namespace Application.Services.UserAuth
                     ["redirect_uri"] = _configuration[ConfigurationKeys.GoogleRedirectUrl]!
                 }));
 
-            return (await response.Content.ReadFromJsonAsync<GoogleTokenResponse>())!;
+            return (await response.Content.ReadFromJsonAsync<GoogleTokenResponseModel>())!;
         }
     }
 }

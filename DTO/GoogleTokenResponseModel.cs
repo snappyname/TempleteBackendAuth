@@ -2,7 +2,7 @@
 
 namespace DTO
 {
-    public class GoogleTokenResponse
+    public class GoogleTokenResponseModel
     {
         [JsonPropertyName("id_token")] public string IdToken { get; set; } = null!;
     }
