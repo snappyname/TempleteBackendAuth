@@ -1,6 +1,6 @@
 ﻿using DTO;
 
-namespace Application.Abstract
+namespace Application.Abstract.Auth
 {
     public interface IEmailAuthService
     {

@@ -1,3 +1,5 @@
+using Application.Services.SignalR;
+using Application.Services.SignalR.Extensions;
 using System.Text;
 using Dal;
 using Domain;
@@ -11,8 +13,10 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
+builder.Services.AddSignalR();
 
 builder.Services.AddScopedServices();
+builder.Services.AddSingletonServices();
 
 builder.Services.AddCors(options =>
 {
@@ -21,7 +25,8 @@ builder.Services.AddCors(options =>
         policy
             .WithOrigins(builder.Configuration["CORS:FrontendUrl"]!)
             .AllowAnyHeader()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -40,6 +45,22 @@ builder.Services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!)),
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
+        };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -61,6 +82,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
+app.UseAuthorization(); 
 app.MapControllers();
+app.MapHub<BroadcastHub>("/hubs/broadcast");
 app.Run();

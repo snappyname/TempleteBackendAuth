@@ -1,5 +1,6 @@
 ﻿using Application.Abstract;
-using Application.Services.UserAuth;
+using Application.Abstract.Auth;
+using Application.Services.Auth.Extensions;
 using Dal;
 using Domain;
 using DTO;

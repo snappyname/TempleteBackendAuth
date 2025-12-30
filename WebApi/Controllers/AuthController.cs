@@ -1,4 +1,5 @@
 ﻿using Application.Abstract;
+using Application.Abstract.Auth;
 using Dal;
 using DTO;
 using Microsoft.AspNetCore.Authorization;

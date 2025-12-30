@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 using System.Text;
 using TemplateWebApi;
 
-namespace Application.Services.UserAuth
+namespace Application.Services.Auth.Extensions
 {
     public static class TokenGenerator
     {
