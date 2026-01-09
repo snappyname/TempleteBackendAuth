@@ -1,5 +1,8 @@
-﻿namespace DTO
+﻿using GeneratorAttributes.Attributes;
+
+namespace DTO
 {
+    [GeneratorIgnore]
     public class GithubEmailModel
     {
         public string Email {get; set;}

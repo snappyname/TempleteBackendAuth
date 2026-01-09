@@ -1,7 +1,9 @@
-﻿using System.Text.Json.Serialization;
+﻿using GeneratorAttributes.Attributes;
+using System.Text.Json.Serialization;
 
 namespace DTO
 {
+    [GeneratorIgnore]
     public class GithubUserResponse
     {
         [JsonPropertyName("login")] public string Login {get; set;}
