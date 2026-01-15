@@ -36,7 +36,7 @@ jobs:
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          ACTIVE=$(grep -o '500[12]' /etc/nginx/conf.d/backend.conf)
+          ACTIVE=$(grep -o '500[12]' /etc/nginx/sites-available/backend.conf)
 
           if [ "$ACTIVE" = "5001" ]; then
             TARGET=green
