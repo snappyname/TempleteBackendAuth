@@ -48,7 +48,7 @@ jobs:
             OLD=green
           fi
 
-          sudo rsync -a --delete /var/www/backend/new/ /var/www/backend/$TARGET/
+          sudo rsync -a --delete /var/www/backend/new/publish /var/www/backend/$TARGET/
 
           sudo systemctl restart backend-$TARGET
 
