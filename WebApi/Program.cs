@@ -4,6 +4,7 @@ using System.Text;
 using Dal;
 using Domain;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using TemplateWebApi.Helpers;
@@ -73,6 +74,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Database")));
 
 WebApplication app = builder.Build();
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedFor
+});
+
+app.UseForwardedHeaders();
 
 app.UseCors("Frontend");
 
@@ -81,7 +88,9 @@ if (app.Environment.IsDevelopment())
     app.ApplyMigrations();
 }
 
-app.UseHttpsRedirection();
+app.MapGet("/health", () => Results.Ok());
+
+//app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization(); 
 app.MapControllers();

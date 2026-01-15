@@ -13,7 +13,7 @@ using TemplateWebApi.Controllers.Base;
 namespace TemplateWebApi.Controllers;
 
 [ApiController]
-[Route("users")]
+[Route("api/users")]
 public class UsersController : BaseController
 {
     private readonly IUserService _userService;

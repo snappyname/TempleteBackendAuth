@@ -9,7 +9,7 @@ using TemplateWebApi.Controllers.Base;
 namespace TemplateWebApi.Controllers;
 
 [ApiController]
-[Route("auth")]
+[Route("api/auth")]
 public class AuthController : BaseController
 {
     private readonly IGoogleAuthService _googleAuthService;

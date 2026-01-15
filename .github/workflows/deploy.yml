@@ -1,0 +1,65 @@
+name: Deploy backend
+
+on:
+  push:
+    branches: [ "CICD" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Publish
+      run: |
+        dotnet publish -c Release --self-contained false -r linux-x64
+
+    - name: Copy to server
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USER }}
+        key: ${{ secrets.SSH_KEY }}
+        source: "publish/*"
+        target: "/var/www/backend/new"
+
+    - name: Deploy via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USER }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          ACTIVE=$(grep -o '500[12]' /etc/nginx/conf.d/backend.conf)
+
+          if [ "$ACTIVE" = "5001" ]; then
+            TARGET=green
+            PORT=5002
+            OLD=blue
+          else
+            TARGET=blue
+            PORT=5001
+            OLD=green
+          fi
+
+          rsync -a --delete /var/www/backend/new/ /var/www/backend/$TARGET/
+
+          systemctl restart backend-$TARGET
+
+          for i in {1..10}; do
+            if curl -fs http://localhost:$PORT/health; then
+              break
+            fi
+            sleep 2
+          done
+
+          sed -i "s/$ACTIVE/$PORT/" /etc/nginx/conf.d/backend.conf
+          nginx -s reload
+
+          systemctl stop backend-$OLD
