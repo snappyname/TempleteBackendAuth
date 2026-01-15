@@ -19,6 +19,7 @@ jobs:
     - name: Publish
       run: |
         dotnet publish -o publish -c Release --self-contained false -r linux-x64
+        tar -C publish -czf backend.tar.gz .
 
     - name: Copy to server
       uses: appleboy/scp-action@v0.1.7
@@ -26,7 +27,7 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
-        source: "publish/"
+        source: "backend.tar.gz"
         target: "/var/www/backend/new"
 
     - name: Deploy via SSH
@@ -36,30 +37,34 @@ jobs:
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          ACTIVE=$(grep -o '500[12]' /etc/nginx/sites-available/backend.conf)
+            sudo cd /var/www/backend
+            sudo rm -rf new/*
+            sudo tar -xzf new/backend.tar.gz -C new
+            sudo rm new/backend.tar.gz
+            ACTIVE=$(grep -o '500[12]' /etc/nginx/sites-available/backend.conf)
 
-          if [ "$ACTIVE" = "5001" ]; then
-            TARGET=green
-            PORT=5002
-            OLD=blue
-          else
-            TARGET=blue
-            PORT=5001
-            OLD=green
-          fi
+            if [ "$ACTIVE" = "5001" ]; then
+                TARGET=green
+                PORT=5002
+                OLD=blue
+            else
+                TARGET=blue
+                PORT=5001
+                OLD=green
+            fi
 
-          sudo rsync -a --delete /var/www/backend/new/ /var/www/backend/$TARGET/
+            sudo rsync -a --delete new/ $TARGET/
 
-          sudo systemctl restart backend-$TARGET
+            sudo systemctl restart backend-$TARGET
 
-          for i in {1..10}; do
-            if curl -fs http://localhost:$PORT/health; then
-              break
+            for i in {1..10}; do
+                if curl -fs http://localhost:$PORT/health; then
+                echo "Health OK"
+                break
             fi
             sleep 2
-          done
+            done
 
-          sudo sed -i "s/$ACTIVE/$PORT/" /etc/nginx/conf.d/backend.conf
-          nginx -s reload
-
-          sudo systemctl stop backend-$OLD
+            sudo sed -i "s/$ACTIVE/$PORT/" /etc/nginx/sites-available/backend.conf
+            nginx -s reload
+            sudo systemctl stop backend-$OLD
