@@ -36,7 +36,7 @@ jobs:
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          ACTIVE=$(grep -o '500[12]' /etc/nginx/sites-available/backend.conf)
+          ACTIVE=$(grep -oE '127\.0\.0\.1:500[12]' /etc/nginx/sites-available/backend.conf | head -n1 | grep -o '500[12]')
 
           if [ "$ACTIVE" = "5001" ]; then
             TARGET=green
@@ -48,18 +48,23 @@ jobs:
             OLD=green
           fi
 
-          sudo rsync -a --delete /var/www/backend/new/publish /var/www/backend/$TARGET/
+          sudo rsync -a --delete /var/www/backend/new/publish/ /var/www/backend/$TARGET/
 
-          sudo systemctl restart backend-$TARGET
+          sudo systemctl start backend-$TARGET
 
-          for i in {1..10}; do
-            if curl -fs http://localhost:$PORT/health; then
-              break
-            fi
-            sleep 2
-          done
+          HEALTH_OK=false
 
-          sudo sed -i "s/$ACTIVE/$PORT/" /etc/nginx/conf.d/backend.conf
-          nginx -s reload
+            for i in {1..15}; do
+                if curl -fs http://127.0.0.1:$PORT/api/health/status > /dev/null; then
+                    HEALTH_OK=true
+                    break
+                fi
+                sleep 2
+            done
 
+          sudo sed -i -E "s/(127\.0\.0\.1:)$ACTIVE/\1$PORT/" /etc/nginx/sites-available/backend.conf
+          sudo nginx -t
+          sudo nginx -s reload
+
+          sleep 5
           sudo systemctl stop backend-$OLD
