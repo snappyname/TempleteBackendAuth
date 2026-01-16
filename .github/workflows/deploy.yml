@@ -20,6 +20,12 @@ jobs:
       run: |
         dotnet publish -o publish -c Release --self-contained false -r linux-x64
 
+    - name: Inject secrets into appsettings.json
+      run: |
+        FILE=publish/appsettings.json
+        sed -i "s|__Google_Secret__|${{ secrets.Google_Secret }}|g" $FILE
+        sed -i "s|__Github_Secret__|${{ secrets.Gthub_Secret }}|g" $FILE
+
     - name: Copy to server
       uses: appleboy/scp-action@v0.1.7
       with:
