@@ -14,6 +14,7 @@ namespace TemplateWebApi.Controllers
 
         public HealthController(AppDbContext context) : base(context)
         {
+            _dbContext = context;
         }
 
         [AllowAnonymous]

@@ -31,6 +31,13 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear(); 
+    options.KnownProxies.Clear();
+});
+
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -87,8 +94,6 @@ if (app.Environment.IsDevelopment())
 {
     app.ApplyMigrations();
 }
-
-app.MapGet("/health", () => Results.Ok());
 
 //app.UseHttpsRedirection();
 app.UseAuthentication();
